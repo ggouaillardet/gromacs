@@ -113,6 +113,8 @@ struct KernelBenchOptions
     int numWarmupIterations = 0;
     //! Print cycles/pair instead of pairs/cycle
     bool cyclesPerPair = false;
+    //! Report in micro seconds instead of cycles
+    bool time = false;
 };
 
 /*! \brief

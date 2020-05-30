@@ -190,6 +190,45 @@ static __inline__ gmx_cycles_t gmx_cycles_read()
     const gmx_cycles_t c_high = high;
     return c_low | c_high << 32;
 }
+
+static __inline__ gmx_cycles_t gmx_cycles_freq()
+{
+#    ifdef __x86_64__
+    long      tmp;
+    int       cpuid1, cpuid2;
+    const int l0  = 0x0;
+    const int l16 = 0x16;
+
+    /* cpuid clobbers ebx but it must be restored for -fPIC so save
+     * then restore ebx */
+    __asm__ volatile(
+            "xchg %%rbx, %2\n"
+            "cpuid\n"
+            "xchg %%rbx, %2\n"
+            : "=a"(cpuid1), "=d"(cpuid2), "=r"(tmp)
+            : "a"(l0)
+            : "ecx", "ebx");
+    if (cpuid1 >= 0x16)
+    {
+        __asm__ volatile(
+                "xchg %%rbx, %2\n"
+                "cpuid\n"
+                "xchg %%rbx, %2\n"
+                : "=a"(cpuid1), "=d"(cpuid2), "=r"(tmp)
+                : "a"(l16)
+                : "ecx", "ebx");
+        return (gmx_cycles_t)cpuid1 * (gmx_cycles_t)1000000;
+    }
+    else
+    {
+        return 0;
+    }
+}
+#    else
+    return 0;
+}
+#    endif
+
 #elif ((defined __aarch64__) \
        && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
@@ -197,6 +236,15 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
     /* 64-bit ARM cycle counters with GCC inline assembly */
     gmx_cycles_t cycle;
     __asm__ __volatile__("mrs %0, cntvct_el0" : "=r"(cycle));
+
+    return cycle;
+}
+
+static __inline__ gmx_cycles_t gmx_cycles_freq()
+{
+    /* 64-bit ARM cycle counters with GCC inline assembly */
+    gmx_cycles_t cycle;
+    __asm__ __volatile__("mrs %0, cntfrq_el0" : "=r"(cycle));
 
     return cycle;
 }

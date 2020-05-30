@@ -100,6 +100,14 @@ static std::optional<std::string> checkKernelSetup(const KernelBenchOptions& opt
         return "the requested SIMD kernel was not set up at configuration time";
     }
 
+    if (options.time)
+    {
+        if (0 == gmx_cycles_freq())
+        {
+            return " the -time option is unsupported on this system";
+        }
+    }
+
     return {};
 }
 
@@ -326,18 +334,38 @@ static void setupAndRunInstance(const gmx::BenchmarkSystem& system,
     cycles = gmx_cycles_read() - cycles;
     if (!doWarmup)
     {
-        const double dCycles = static_cast<double>(cycles);
-        if (options.cyclesPerPair)
+        if (options.time)
         {
-            fprintf(stdout, "%10.3f %10.4f %8.4f %8.4f\n", cycles * 1e-6,
-                    dCycles / options.numIterations * 1e-6, dCycles / (options.numIterations * numPairs),
-                    dCycles / (options.numIterations * numUsefulPairs));
+            const double uSec = static_cast<double>(cycles) / static_cast<double>(gmx_cycles_freq()) * 1.e6;
+            if (options.cyclesPerPair)
+            {
+                fprintf(stdout, "%10.3f %10.4f %8.4f %8.4f\n", uSec, uSec / options.numIterations,
+                        uSec / (options.numIterations * numPairs),
+                        uSec / (options.numIterations * numUsefulPairs));
+            }
+            else
+            {
+                fprintf(stdout, "%10.3f %10.4f %8.4f %8.4f\n", uSec, uSec / options.numIterations,
+                        options.numIterations * numPairs / uSec,
+                        options.numIterations * numUsefulPairs / uSec);
+            }
         }
         else
         {
-            fprintf(stdout, "%10.3f %10.4f %8.4f %8.4f\n", dCycles * 1e-6,
-                    dCycles / options.numIterations * 1e-6, options.numIterations * numPairs / dCycles,
-                    options.numIterations * numUsefulPairs / dCycles);
+            const double dCycles = static_cast<double>(cycles);
+            if (options.cyclesPerPair)
+            {
+                fprintf(stdout, "%10.3f %10.4f %8.4f %8.4f\n", cycles * 1e-6,
+                        dCycles / options.numIterations * 1e-6,
+                        dCycles / (options.numIterations * numPairs),
+                        dCycles / (options.numIterations * numUsefulPairs));
+            }
+            else
+            {
+                fprintf(stdout, "%10.3f %10.4f %8.4f %8.4f\n", dCycles * 1e-6,
+                        dCycles / options.numIterations * 1e-6, options.numIterations * numPairs / dCycles,
+                        options.numIterations * numUsefulPairs / dCycles);
+            }
         }
     }
 }
@@ -413,8 +441,16 @@ void bench(const int sizeFactor, const KernelBenchOptions& options)
         setupAndRunInstance(system, optionsList[0], true);
     }
 
-    fprintf(stdout, "Coulomb LJ   comb. SIMD    Mcycles  Mcycles/it.   %s\n",
-            options.cyclesPerPair ? "cycles/pair" : "pairs/cycle");
+    if (options.time)
+    {
+        fprintf(stdout, "Coulomb LJ   comb. SIMD    usec     usec/it.      %s\n",
+                options.cyclesPerPair ? "usec/pair" : "pairs/usec");
+    }
+    else
+    {
+        fprintf(stdout, "Coulomb LJ   comb. SIMD    Mcycles  Mcycles/it.   %s\n",
+                options.cyclesPerPair ? "cycles/pair" : "pairs/cycle");
+    }
     fprintf(stdout, "                                                total    useful\n");
 
     for (const auto& optionsInstance : optionsList)

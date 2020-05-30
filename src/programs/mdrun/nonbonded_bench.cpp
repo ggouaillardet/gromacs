@@ -208,6 +208,8 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
     options->addOption(BooleanOption("cycles")
                                .store(&benchmarkOptions_.cyclesPerPair)
                                .description("Report cycles/pair instead of pairs/cycle"));
+    options->addOption(
+            BooleanOption("time").store(&benchmarkOptions_.time).description("Report micro-seconds instead of cycles"));
 }
 
 void NonbondedBenchmark::optionsFinished()
