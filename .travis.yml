@@ -27,4 +27,4 @@ script:
   - pwd
   - cmake -DGMX_USE_RDTSCP=OFF ..
   - make -j 4
-  - ./bin/gmx nonbonded-benchmark -all -size 1 -nt 1 -iter 100 -warmup 100
+  - ./bin/gmx nonbonded-benchmark -all -size 1 -nt 1 -iter 100 -warmup 100 -time
