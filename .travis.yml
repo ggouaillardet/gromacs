@@ -1,0 +1,27 @@
+os: linux
+dist: focal
+group: edge
+arch: arm64-graviton2
+virt: lxd
+
+addons:
+    apt:
+        packages:
+            - hwloc
+            - libhwloc-dev
+            - libfftw3-dev
+        sources:
+            - ubuntu-toolchain-r-test
+
+language: c
+compiler: gcc
+
+script:
+  - gcc --version
+  - g++ --version
+  - cat /proc/cpuinfo
+  - uname -a
+  - pwd
+  - mkdir build
+  - cd build
+  - pwd
